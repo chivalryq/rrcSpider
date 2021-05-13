@@ -1,6 +1,7 @@
 .idea
 *.csv
 *.json
+*.pyc
 image
 .DS_Store
 venv
