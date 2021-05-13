@@ -1,3 +1,4 @@
+-i https://pypi.mirrors.ustc.edu.cn/simple/
 attrs==20.3.0
 Automat==20.2.0
 certifi==2020.12.5
@@ -31,6 +32,6 @@ Scrapy==2.5.0
 service-identity==18.1.0
 six==1.15.0
 Twisted==21.2.0
-urllib3==1.26.4
+urllib3==1.25.8
 w3lib==1.22.0
 zope.interface==5.4.0

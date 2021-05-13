@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import base64
+import os.path
 import pathlib
 import random
 
@@ -11,6 +12,7 @@ from scrapy.spiders import CrawlSpider
 
 from .utils import *
 from ..items import RrcItem
+from ..settings import IMAGES_STORE
 
 
 class RenrencheSpider(CrawlSpider):
@@ -42,8 +44,8 @@ class RenrencheSpider(CrawlSpider):
         for node in node_list:
             item = RrcItem()
             # 车的名字
-            item['car_name'] = node.xpath('./a/h3/text()').extract_first('').replace(" ", "_")
-            item['car_name'] = base_font(font_dict, item['car_name'])
+            item['name'] = node.xpath('./a/h3/text()').extract_first('').replace(" ", "_")
+            item['name'] = base_font(font_dict, item['name'])
             # 车的信息
             item['car_info'] = node.xpath('./a/div[2]/span').xpath('string(.)').extract_first('')
             item['car_info'] = re.sub('\s', '', item['car_info'])
@@ -51,13 +53,13 @@ class RenrencheSpider(CrawlSpider):
             # 购入时间、里程数
             if '/' not in item['car_info'] or '年' not in item['car_info']:
                 item['car_buy_time'] = str(2020 - random.randint(1, 10)) + "年" + str(random.randint(1, 12)) + '月'
-                item['car_mileage'] = str(round(20 * random.random())) + '万公里'
+                item['mileage'] = str(round(20 * random.random())) + '万公里'
             else:
-                item['car_buy_time'], item['car_mileage'] = item['car_info'].split('/')
+                item['car_buy_time'], item['mileage'] = item['car_info'].split('/')
             del (item['car_info'])
             # 车的价格
-            item['car_price'] = node.xpath('./a/div[4]/div/text()').extract_first('')
-            item['car_price'] = re.sub('\s', '', item['car_price'])
+            item['price'] = node.xpath('./a/div[4]/div/text()').extract_first('')
+            item['price'] = re.sub('\s', '', item['price'])
             # # 首付金额
             item['car_down_payment'] = node.xpath('./a/div[4]//div[@class="m-l"]/text()').extract_first('')
             # 链接
@@ -109,16 +111,16 @@ class RenrencheSpider(CrawlSpider):
         urls = response.xpath('//img[@class="slider-image"]/@data-src').extract()
         image_urls = ['https:' + x for x in urls][:2]
         for url in image_urls:
-            resp = requests.get(url)
-            ext = '.' + url.split('/')[-1]
-            dir = "./image/"
-            unicode = str(base64.urlsafe_b64decode(resp.content))[-8:]  # no % char
-            name = dir + "$".join([item["car_name"], item["car_buy_time"], unicode])
-            filename = dir + name + ext
-
-            fileObj = pathlib.Path(filename)
-            if (fileObj.exists()):
+            if not url.endswith('jpg'):
                 continue
+            resp = requests.get(url)
+            count = 0
+            filename, file_obj = '', None
+            while file_obj is None or file_obj.exists():
+                filename = os.path.join(IMAGES_STORE,
+                                        "_".join([item["name"], item["car_buy_time"], str(count)])) + '.jpg'
+                file_obj = pathlib.Path(filename)
+                count += 1
             with open(filename, 'wb') as jpg:
                 jpg.write(resp.content)
         yield item
