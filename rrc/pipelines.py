@@ -18,7 +18,6 @@ from scrapy.pipelines.images import ImagesPipeline
 
 
 class RrcPipeline(ImagesPipeline):
-    spiderinfo='rrcSpiderInfo'
     def open_spider(self, spider):
         print("start crawling")
 

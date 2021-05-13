@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import base64
+import pathlib
 import random
 
 import requests as requests
@@ -29,23 +31,18 @@ class RenrencheSpider(CrawlSpider):
         打开源代码会发现，原来TM有“投毒”，源代码数据与显示数据不一致，看来这也是一种反爬措施
         """
 
-        # html = response.body.decode('utf-8')
-        # select = etree.HTML(html)
-        # style = select.xpath('//style/text()')[0]
-        # # url('https://misc.rrcimg.com/ttf/rrcttf86293b76594a1bf9ace9fd979b62db63.woff') format('woff')
-        # font_url = re.search(r"url\('(.*?\.woff)'\) format\('woff'\),", str(style)).group(1)
-        # 获取字体url
-        font_url = re.findall('(https://misc.rrcimg.com.*\.ttf)', response.body.decode('utf-8'))[0]
+        # 如需下载字体
+        # font_url = re.findall('(https://misc.rrcimg.com.*\.ttf)', response.body.decode('utf-8'))[0]
         # 字体文件下载
-        with open('人人车.ttf', 'wb') as f:
-            f.write(requests.get(font_url).content)
+        # with open('人人车.ttf', 'wb') as f:
+        #     f.write(requests.get(font_url).content)
         font_dict = font_name('人人车.ttf')
 
         node_list = response.xpath('//*[@id="search_list_wrapper"]/div/div/div[1]/ul//li')  # car block
         for node in node_list:
             item = RrcItem()
             # 车的名字
-            item['car_name'] = node.xpath('./a/h3/text()').extract_first('')
+            item['car_name'] = node.xpath('./a/h3/text()').extract_first('').replace(" ", "_")
             item['car_name'] = base_font(font_dict, item['car_name'])
             # 车的信息
             item['car_info'] = node.xpath('./a/div[2]/span').xpath('string(.)').extract_first('')
@@ -109,8 +106,19 @@ class RenrencheSpider(CrawlSpider):
         # item['car_maintenance'] = response.xpath('//div[@class="info-about-car"]/div/ul/li[8]/text()').extract_first(
         #     default='')
         # item['car_maintenance'] = re.sub('\s', '', item['car_maintenance'])
-        urls=response.xpath('//img[@class="slider-image"]/@data-src').extract()
-        item['image_urls']=['https:'+x for x in urls][:2]
+        urls = response.xpath('//img[@class="slider-image"]/@data-src').extract()
+        image_urls = ['https:' + x for x in urls][:2]
+        for url in image_urls:
+            resp = requests.get(url)
+            ext = '.' + url.split('/')[-1]
+            dir = "./image/"
+            unicode = str(base64.urlsafe_b64decode(resp.content))[-8:]  # no % char
+            name = dir + "$".join([item["car_name"], item["car_buy_time"], unicode])
+            filename = dir + name + ext
+
+            fileObj = pathlib.Path(filename)
+            if (fileObj.exists()):
+                continue
+            with open(filename, 'wb') as jpg:
+                jpg.write(resp.content)
         yield item
-
-
