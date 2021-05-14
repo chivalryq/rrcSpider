@@ -20,8 +20,9 @@ class RrcItem(scrapy.Item):
     car_location = scrapy.Field()
     car_find = scrapy.Field()
 
-    # 存放url的下载地址
+    # 图片的本地保存地址
     image_urls = scrapy.Field()
     image_name = scrapy.Field()
-    # 图片的本地保存地址
-    image_paths = scrapy.Field()
+
+    # 图片网络url
+    image_net_urls=scrapy.Field()

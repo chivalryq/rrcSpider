@@ -5,35 +5,61 @@
 
 
 # useful for handling different item types with a single interface
+import base64
 import os.path
 import pathlib
 import time
 
+import requests
 from itemadapter import ItemAdapter
 from scrapy import Request
 from scrapy.exceptions import DropItem
 from scrapy.pipelines.images import ImagesPipeline
 
+from scrapy.exceptions import DropItem
+
+from rrc.settings import IMAGES_STORE
+from rrc.spiders.rrc import unicode_group
 
 
+class PricePipeline(object):
+    vat_factor = 1.15
 
-class RrcPipeline(ImagesPipeline):
-    def open_spider(self, spider):
-        print("start crawling")
+    def process_item(self, item, spider):
+        if item['price']:
+            if item['price_excludes_vat']:
+                item['price'] = item['price'] * self.vat_factor
+            return item
+        else:
+            raise DropItem("Missing price in %s" % item)
 
-    def get_media_requests(self, item, info):
-        for image_url in item['image_urls']:
-            yield Request(image_url, meta={'item': item})
 
-    def file_path(self, request, response=None, info=None, *, item=None):
-        item = request.meta['item']
-        print(item['name'])
-        file_name = os.path.join(item['name'] + time.time())  # 修改图片文件的保存路径
-        return file_name
+class RrcPipeline(object):
 
-    def item_completed(self, results, item, info):
-        image_paths = [x['path'] for ok, x in results if ok]
-        if not image_paths:
-            raise DropItem("Item contains no files")
-        item['image_paths'] = image_paths
+    def process_item(self, item, spider):
+        urls=item['image_net_urls']
+        image_num_limit = 8
+        image_urls = ['https:' + x for x in urls]
+        if len(image_urls) > image_num_limit:
+            image_urls = image_urls[:8]
+        local_urls = []
+        count = 0
+        for url in image_urls:
+            if not url.endswith('jpg'):
+                continue
+            resp = requests.get(url)
+            filename = os.path.join(IMAGES_STORE,
+                                    "_".join([item["name"], item["car_buy_time"], str(count)])) + '.jpg'
+            count += 1
+            unicode = str(base64.urlsafe_b64decode(resp.content))[-8:]  # no $ char
+            if unicode in unicode_group:
+                raise DropItem("Anti-robot image")
+            else:
+                unicode_group.add(unicode)
+
+            print("downloading image:" + filename)
+            with open(filename, 'wb') as jpg:
+                jpg.write(resp.content)
+            local_urls.append(filename)
+        item['image_urls'] = local_urls
         return item

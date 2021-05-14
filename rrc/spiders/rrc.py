@@ -14,7 +14,7 @@ from scrapy.spiders import CrawlSpider
 from .utils import *
 from ..items import RrcItem
 
-unicode_group = []
+unicode_group = set()
 
 
 class RenrencheSpider(CrawlSpider):
@@ -113,26 +113,5 @@ class RenrencheSpider(CrawlSpider):
         #     default='')
         # item['car_maintenance'] = re.sub('\s', '', item['car_maintenance'])
         urls = response.xpath('//img[@class="slider-image"]/@data-src').extract()
-        image_num_limit = 8
-        image_urls = ['https:' + x for x in urls]
-        if len(image_urls) > image_num_limit:
-            image_urls = image_urls[:8]
-        local_urls = []
-        count = 0
-        for url in image_urls:
-            if not url.endswith('jpg'):
-                continue
-            resp = requests.get(url)
-            filename = os.path.join(IMAGES_STORE,
-                                    "_".join([item["name"], item["car_buy_time"], str(count)])) + '.jpg'
-            count += 1
-            unicode = str(base64.urlsafe_b64decode(resp.content))[-8:]  # no $ char
-            if unicode in unicode_group:
-                raise DropItem("Anti-robot image")
-
-            print("downloading image:" + filename)
-            with open(filename, 'wb') as jpg:
-                jpg.write(resp.content)
-            local_urls.append(filename)
-        item['image_urls'] = local_urls
+        item['image_net_urls']=urls
         yield item
