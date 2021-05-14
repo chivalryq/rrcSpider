@@ -135,7 +135,6 @@ class RenrencheSpider(CrawlSpider):
             if (unicode in unicode_group):
                 raise DropItem("Anti-robot image")
 
-
             print("downloading image:" + filename)
             with open(filename, 'wb') as jpg:
                 jpg.write(resp.content)
