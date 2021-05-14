@@ -7,7 +7,7 @@ import random
 import requests as requests
 import scrapy
 from scrapy.exceptions import DropItem
-from scrapy_splash import SplashRequest
+from ..settings import IMAGES_STORE
 import re
 
 from scrapy.spiders import CrawlSpider
@@ -47,8 +47,8 @@ class RenrencheSpider(CrawlSpider):
         for node in node_list:
             item = RrcItem()
             # 车的名字
-            item['car_name'] = node.xpath('./a/h3/text()').extract_first('').replace(" ", "_")
-            item['car_name'] = base_font(font_dict, item['car_name'])
+            item['name'] = node.xpath('./a/h3/text()').extract_first('').replace(" ", "_")
+            item['name'] = base_font(font_dict, item['name'])
             # 车的信息
             item['car_info'] = node.xpath('./a/div[2]/span').xpath('string(.)').extract_first('')
             item['car_info'] = re.sub('\s', '', item['car_info'])
@@ -56,13 +56,13 @@ class RenrencheSpider(CrawlSpider):
             # 购入时间、里程数
             if '/' not in item['car_info'] or '年' not in item['car_info']:
                 item['car_buy_time'] = str(2020 - random.randint(1, 10)) + "年" + str(random.randint(1, 12)) + '月'
-                item['car_mileage'] = str(round(20 * random.random())) + '万公里'
+                item['mileage'] = str(round(20 * random.random())) + '万公里'
             else:
-                item['car_buy_time'], item['car_mileage'] = item['car_info'].split('/')
+                item['car_buy_time'], item['mileage'] = item['car_info'].split('/')
             del (item['car_info'])
             # 车的价格
-            item['car_price'] = node.xpath('./a/div[4]/div/text()').extract_first('')
-            item['car_price'] = re.sub('\s', '', item['car_price'])
+            item['price'] = node.xpath('./a/div[4]/div/text()').extract_first('')
+            item['price'] = re.sub('\s', '', item['price'])
             # # 首付金额
             item['car_down_payment'] = node.xpath('./a/div[4]//div[@class="m-l"]/text()').extract_first('')
             # 链接
@@ -78,7 +78,7 @@ class RenrencheSpider(CrawlSpider):
     def parse_item(self, response):
         item = response.meta['item']
         # in case they don't have
-        item['image_url'] = []
+        item['image_urls'] = []
         # 新车购置税
         item['car_tax'] = response.xpath('//div[@class="middle-content"]/div/div').xpath('string(.)').extract_first('')
         item['car_tax'] = re.sub('\s', '', item['car_tax'])
@@ -139,5 +139,5 @@ class RenrencheSpider(CrawlSpider):
             with open(filename, 'wb') as jpg:
                 jpg.write(resp.content)
             local_urls.append(filename)
-        item['image_url'] = local_urls
+        item['image_urls'] = local_urls
         yield item
