@@ -1,16 +1,21 @@
 # -*- coding: utf-8 -*-
 import base64
+import os
 import pathlib
 import random
 
 import requests as requests
 import scrapy
+from scrapy.exceptions import DropItem
+from scrapy_splash import SplashRequest
 import re
 
 from scrapy.spiders import CrawlSpider
 
 from .utils import *
 from ..items import RrcItem
+
+unicode_group = []
 
 
 class RenrencheSpider(CrawlSpider):
@@ -72,6 +77,8 @@ class RenrencheSpider(CrawlSpider):
 
     def parse_item(self, response):
         item = response.meta['item']
+        # in case they don't have
+        item['image_url'] = []
         # 新车购置税
         item['car_tax'] = response.xpath('//div[@class="middle-content"]/div/div').xpath('string(.)').extract_first('')
         item['car_tax'] = re.sub('\s', '', item['car_tax'])
@@ -107,18 +114,29 @@ class RenrencheSpider(CrawlSpider):
         #     default='')
         # item['car_maintenance'] = re.sub('\s', '', item['car_maintenance'])
         urls = response.xpath('//img[@class="slider-image"]/@data-src').extract()
-        image_urls = ['https:' + x for x in urls][:2]
+        image_num_limit = 8
+        image_urls = ['https:' + x for x in urls]
+        if len(image_urls) > image_num_limit:
+            image_urls = image_urls[:8]
+        local_urls = []
         for url in image_urls:
             resp = requests.get(url)
             ext = '.' + url.split('/')[-1]
             dir = "./image/"
-            unicode = str(base64.urlsafe_b64decode(resp.content))[-8:]  # no % char
-            name = dir + "$".join([item["car_name"], item["car_buy_time"], unicode])
-            filename = dir + name + ext
+            unicode = str(base64.urlsafe_b64decode(resp.content))[-8:]  # no $ char
+            if (unicode in unicode_group):
+                raise DropItem("Anti-robot image")
+            name = "$".join([item["car_name"], item["car_buy_time"], unicode])
+            filename = (dir + name + ext).replace("/", "_")
 
             fileObj = pathlib.Path(filename)
             if (fileObj.exists()):
+                print(filename + "exists,skip")
                 continue
+
+            print("downloading image:" + filename)
             with open(filename, 'wb') as jpg:
                 jpg.write(resp.content)
+            local_urls.append(filename)
+        item['image_url'] = local_urls
         yield item
