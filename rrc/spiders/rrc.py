@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import base64
 import os
-import pathlib
 import random
 
 import requests as requests
@@ -51,7 +50,7 @@ class RenrencheSpider(CrawlSpider):
             item['name'] = base_font(font_dict, item['name'])
             # 车的信息
             item['car_info'] = node.xpath('./a/div[2]/span').xpath('string(.)').extract_first('')
-            item['car_info'] = re.sub('\s', '', item['car_info'])
+            item['car_info'] = re.sub(r'\s', '', item['car_info'])
             item['car_info'] = base_font(font_dict, item['car_info'])
             # 购入时间、里程数
             if '/' not in item['car_info'] or '年' not in item['car_info']:
@@ -62,7 +61,7 @@ class RenrencheSpider(CrawlSpider):
             del (item['car_info'])
             # 车的价格
             item['price'] = node.xpath('./a/div[4]/div/text()').extract_first('')
-            item['price'] = re.sub('\s', '', item['price'])
+            item['price'] = re.sub(r'\s', '', item['price'])
             # # 首付金额
             item['car_down_payment'] = node.xpath('./a/div[4]//div[@class="m-l"]/text()').extract_first('')
             # 链接
@@ -81,7 +80,7 @@ class RenrencheSpider(CrawlSpider):
         item['image_urls'] = []
         # 新车购置税
         item['car_tax'] = response.xpath('//div[@class="middle-content"]/div/div').xpath('string(.)').extract_first('')
-        item['car_tax'] = re.sub('\s', '', item['car_tax'])
+        item['car_tax'] = re.sub(r'\s', '', item['car_tax'])
         # 购买方式
         # item['car_method'] = response.xpath('//div[@class="list payment-list"]/p[1]/text()').extract_first('')
         # 首付金额
@@ -92,7 +91,7 @@ class RenrencheSpider(CrawlSpider):
 
         item['car_fee'] = response.xpath('//div[@class="detail-version3-service"]/p[2]').xpath(
             'string(.)').extract_first('')
-        item['car_fee'] = re.sub('\s', '', item['car_fee'])
+        item['car_fee'] = re.sub(r'\s', '', item['car_fee'])
         # 车牌所在地
         item['car_location'] = response.xpath('//div[@class="licensed-city"]/p/strong/text()').extract_first('')
         # 外迁查询
@@ -119,20 +118,16 @@ class RenrencheSpider(CrawlSpider):
         if len(image_urls) > image_num_limit:
             image_urls = image_urls[:8]
         local_urls = []
+        count = 0
         for url in image_urls:
             if not url.endswith('jpg'):
                 continue
             resp = requests.get(url)
-            count = 0
-            filename, file_obj = '', None
-            while file_obj is None or file_obj.exists():
-                filename = os.path.join(IMAGES_STORE,
-                                        "_".join([item["name"], item["car_buy_time"], str(count)])) + '.jpg'
-                file_obj = pathlib.Path(filename)
-                count += 1
-
+            filename = os.path.join(IMAGES_STORE,
+                                    "_".join([item["name"], item["car_buy_time"], str(count)])) + '.jpg'
+            count += 1
             unicode = str(base64.urlsafe_b64decode(resp.content))[-8:]  # no $ char
-            if (unicode in unicode_group):
+            if unicode in unicode_group:
                 raise DropItem("Anti-robot image")
 
             print("downloading image:" + filename)
