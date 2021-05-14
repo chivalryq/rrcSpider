@@ -1,7 +1,10 @@
 .idea
 *.csv
 *.json
+*.pyc
 image
 .DS_Store
 venv
+venv_win
 */__pycache__
+sql.txt

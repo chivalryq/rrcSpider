@@ -120,19 +120,21 @@ class RenrencheSpider(CrawlSpider):
             image_urls = image_urls[:8]
         local_urls = []
         for url in image_urls:
+            if not url.endswith('jpg'):
+                continue
             resp = requests.get(url)
-            ext = '.' + url.split('/')[-1]
-            dir = "./image/"
+            count = 0
+            filename, file_obj = '', None
+            while file_obj is None or file_obj.exists():
+                filename = os.path.join(IMAGES_STORE,
+                                        "_".join([item["name"], item["car_buy_time"], str(count)])) + '.jpg'
+                file_obj = pathlib.Path(filename)
+                count += 1
+
             unicode = str(base64.urlsafe_b64decode(resp.content))[-8:]  # no $ char
             if (unicode in unicode_group):
                 raise DropItem("Anti-robot image")
-            name = "$".join([item["car_name"], item["car_buy_time"], unicode])
-            filename = (dir + name + ext).replace("/", "_")
 
-            fileObj = pathlib.Path(filename)
-            if (fileObj.exists()):
-                print(filename + "exists,skip")
-                continue
 
             print("downloading image:" + filename)
             with open(filename, 'wb') as jpg:

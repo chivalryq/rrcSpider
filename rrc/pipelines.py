@@ -27,8 +27,8 @@ class RrcPipeline(ImagesPipeline):
 
     def file_path(self, request, response=None, info=None, *, item=None):
         item = request.meta['item']
-        print(item['car_name'])
-        file_name = os.path.join(item['car_name'] + time.time())  # 修改图片文件的保存路径
+        print(item['name'])
+        file_name = os.path.join(item['name'] + time.time())  # 修改图片文件的保存路径
         return file_name
 
     def item_completed(self, results, item, info):
