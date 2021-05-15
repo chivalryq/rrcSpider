@@ -2,5 +2,5 @@
 spider for renrenche
 
 Run method:
-1. `mkdir image` in project root dir
-2. just run `make start`
+1. run `make start` to collect data
+2. run `make gen_sql` to generate sql. **Will drop existing data.**
