@@ -1,14 +1,8 @@
-# -*- coding: utf-8 -*-
-import base64
-import os
 import random
+import re
 
 import requests as requests
 import scrapy
-from scrapy.exceptions import DropItem
-from ..settings import IMAGES_STORE
-import re
-
 from scrapy.spiders import CrawlSpider
 
 from .utils import *
@@ -19,7 +13,15 @@ unicode_group = set()
 
 class RenrencheSpider(CrawlSpider):
     name = 'renrenche'
-    start_urls = ['https://www.renrenche.com/gz/ershouche/']
+    ab = "qwertyuiopasdfghjklzxcvbnm"
+    # for a in ab:
+    #     print(a)
+    start_urls=[]
+    for a in ab:
+        for b in ab:
+            start_urls.append("https://www.renrenche.com/" + a + b + "/ershouche/")
+
+    # start_urls = ['https://www.renrenche.com/sz/ershouche/','https://www.renrenche.com/sz/ershouche/']
 
     def start_requests(self):
         # for i in range(1, 5, 1):
@@ -28,7 +30,7 @@ class RenrencheSpider(CrawlSpider):
         for url in self.start_urls:
             yield scrapy.Request(url=url, callback=self.parse)
 
-    def parse(self, response):
+    def parse(self, response, **kwargs):
         """
         https://www.renrenche.com/gz/ershouche/p1/?&plog_id=79d79d263044559732d687b64c258ab4
         初步看了下，从列表页到内容页，并没有用ajax加载数据，只需要用xpath提取元素字段即可。
@@ -36,10 +38,10 @@ class RenrencheSpider(CrawlSpider):
         """
 
         # 如需下载字体
-        # font_url = re.findall('(https://misc.rrcimg.com.*\.ttf)', response.body.decode('utf-8'))[0]
+        font_url = re.findall('(https://misc.rrcimg.com.*\.ttf)', response.body.decode('utf-8'))[0]
         # 字体文件下载
-        # with open('人人车.ttf', 'wb') as f:
-        #     f.write(requests.get(font_url).content)
+        with open('人人车.ttf', 'wb') as f:
+            f.write(requests.get(font_url).content)
         font_dict = font_name('人人车.ttf')
 
         node_list = response.xpath('//*[@id="search_list_wrapper"]/div/div/div[1]/ul//li')  # car block
@@ -113,5 +115,5 @@ class RenrencheSpider(CrawlSpider):
         #     default='')
         # item['car_maintenance'] = re.sub('\s', '', item['car_maintenance'])
         urls = response.xpath('//img[@class="slider-image"]/@data-src').extract()
-        item['image_net_urls']=urls
+        item['image_net_urls'] = urls
         yield item

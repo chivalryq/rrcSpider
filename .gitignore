@@ -6,5 +6,5 @@ image
 .DS_Store
 venv
 venv_win
-*/__pycache__
+**.pyc
 sql.txt
