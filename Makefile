@@ -7,4 +7,4 @@ start:
 	scrapy crawl renrenche -o result.json -s FEED_EXPORT_ENCODING=UTF-8
 gen_sql:
 	bash -c "source venv/bin/activate"
-	python3 sql_generator.py > sql.txt
+	python3 sql/sql_generator.py > sql.txt

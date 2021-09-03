@@ -1,6 +1,6 @@
 .idea
 *.csv
-*.json
+#*.json
 *.pyc
 image
 .DS_Store
