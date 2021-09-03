@@ -6,6 +6,8 @@ from sql.sql_generator import Car
 def keep(car: Car) -> bool:
     if car.price == 0.0:
         return False
+    if car.original_price == -1:
+        return False
     return True
 
 

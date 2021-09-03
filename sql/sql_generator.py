@@ -63,6 +63,13 @@ class Car(object):
         except IndexError:
             pass
 
+        try:
+            original_price = re.findall(r'[\d.]+', data['car_tax'])[0]
+            self.original_price = original_price
+        except IndexError:
+            self.original_price = -1
+            pass
+
     def gen_sql(self) -> List[str]:
         key_val_map = {}
         for key, val in self.__dict__.items():
@@ -86,11 +93,7 @@ class Car(object):
         return sql_list
 
     def __str__(self) -> str:
-        return "\n".join(["{}:{}".format(i[0], i[1]) for i in self.__dict__])
-        # for info in self.__dict__:
-        #     s='\n'.join(info[0])
-        #     return infos[0]
-        # print(k, v)
+        return "\n".join(["{}:{}".format(i, self.__dict__[i]) for i in self.__dict__]) + "\n--------"
 
     def gen_hbase(self) -> None:
         pass
