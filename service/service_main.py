@@ -24,8 +24,12 @@ def serve():
     server.wait_for_termination()
 
 
-if __name__ == '__main__':
+def main():
     logging.basicConfig()
     model.pre_train()
     print("ready to serve")
     serve()
+
+
+if __name__ == '__main__':
+    main()

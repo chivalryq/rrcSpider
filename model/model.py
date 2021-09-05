@@ -1,4 +1,3 @@
-import os
 from typing import List
 
 import lightgbm as lgb
@@ -82,7 +81,7 @@ model_lgb, model_xgb, model_gbdt = lgb.LGBMRegressor(), xgb.XGBRegressor(), Grad
 def pre_train():
     global model_lgb, model_xgb, model_gbdt
 
-    csv_data = pd.read_csv('../model/predict_data.csv', sep=',')
+    csv_data = pd.read_csv('./model/predict_data.csv', sep=',')
     csv_data['regDate'] = csv_data['regDate'].apply(lambda x: parse_time_str(x))
 
     train_data = csv_data
