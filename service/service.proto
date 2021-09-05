@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+message Car{
+  optional float original_price = 1;
+  optional int32 register_timestamp = 2;
+  optional float mileage = 3;
+}
+
+message PredictOneReq{
+  optional Car car = 1;
+}
+
+message PredictOneRsp{
+  optional float price = 1;
+}
+
+service PricePredict{
+  rpc PredictOne (PredictOneReq) returns (PredictOneRsp) {}
+}
