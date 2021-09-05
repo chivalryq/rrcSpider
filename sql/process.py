@@ -1,8 +1,10 @@
+import csv
+
 from sql.sql_generator import Car
 from sql.util import get_cars
 
 
-class PredictCar():
+class PredictCar(object):
     def __init__(self, c: Car):
         self.price = c.price
         self.regDate = c.regDate
@@ -20,7 +22,20 @@ def get_process_data():
     return p_cars
 
 
-if __name__ == '__main__':
+def main():
     cars = get_process_data()
-    print("example data:")
-    print(cars[0])
+    keys = ['price', 'regDate', 'original_price', 'mileage', 'name']
+    with open('predict_data.csv', 'w', newline='') as csv_file:
+        writer = csv.DictWriter(csv_file, fieldnames=keys)
+        writer.writeheader()
+        for car in cars:
+            d = {}
+            for key in keys:
+                d[key] = getattr(car, key, None)
+            writer.writerow(d)
+    # print("example data:")
+    # print(cars[0])
+
+
+if __name__ == '__main__':
+    main()
