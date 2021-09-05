@@ -1,3 +1,4 @@
+import os
 from typing import List
 
 import lightgbm as lgb
@@ -44,7 +45,7 @@ def build_model_gbdt(x_train, y_train):
     gbdt = GridSearchCV(estimator, param_grid, cv=3)
     gbdt.fit(x_train, y_train)
     print(gbdt.best_params_)
-    # print(gbdt.best_estimator_ )
+    print(gbdt.best_estimator_)
     return gbdt
 
 
@@ -71,13 +72,17 @@ def parse_time_str(datetime_str: str) -> int:
     return (date.year - 1970) * 12 + date.month
 
 
+def parse_timestamp(timestamp: int) -> int:
+    return timestamp // 60 // 60 // 24 // 30
+
+
 model_lgb, model_xgb, model_gbdt = lgb.LGBMRegressor(), xgb.XGBRegressor(), GradientBoostingRegressor()
 
 
 def pre_train():
     global model_lgb, model_xgb, model_gbdt
 
-    csv_data = pd.read_csv('predict_data.csv', sep=',')
+    csv_data = pd.read_csv('../model/predict_data.csv', sep=',')
     csv_data['regDate'] = csv_data['regDate'].apply(lambda x: parse_time_str(x))
 
     train_data = csv_data
@@ -106,7 +111,13 @@ def weighted_method(test_pre1, test_pre2, test_pre3, w: List[float]):
     return w[0] * pd.Series(test_pre1) + w[1] * pd.Series(test_pre2) + w[2] * pd.Series(test_pre3)
 
 
-def predict(x_val) -> float:
+def predict(original_price: float, mileage: float, timestamp: int) -> float:
+    data_dict = {
+        'original_price': [original_price],
+        'mileage': [mileage],
+        'regDate': [parse_timestamp(timestamp)],
+    }
+    x_val = pd.DataFrame.from_dict(data_dict)
     val_gbdt = model_gbdt.predict(x_val)
     val_xgb = model_xgb.predict(x_val)
     val_lgb = model_lgb.predict(x_val)
@@ -118,14 +129,14 @@ def predict(x_val) -> float:
 
 def main():
     pre_train()
-    data_dict = {
-        'original_price': [100],
-        'mileage': [5],
-        'regDate': [360],
-    }
-    data_df = pd.DataFrame.from_dict(data_dict)
-    res = predict(data_df)
-    print(res)
+    # data_dict = {
+    #     'original_price': [100],
+    #     'mileage': [5],
+    #     'regDate': [360],
+    # }
+    # data_df = pd.DataFrame.from_dict(data_dict)
+    # res = predict(data_df)
+    # print(res)
 
 
 if __name__ == '__main__':

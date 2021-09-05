@@ -3,13 +3,16 @@ from concurrent.futures import ThreadPoolExecutor
 
 import grpc
 
+from model import model
 from service import service_pb2_grpc
 from service.service_pb2 import PredictOneReq, PredictOneRsp
 
 
 class PredictService(service_pb2_grpc.PricePredictServicer):
     def PredictOne(self, request: PredictOneReq, context):
-        rsp = PredictOneRsp(price='1.0')
+        rsp = PredictOneRsp(price=model.predict(request.car.original_price,
+                                                request.car.mileage,
+                                                request.car.register_timestamp))
         return rsp
 
 
@@ -23,4 +26,6 @@ def serve():
 
 if __name__ == '__main__':
     logging.basicConfig()
+    model.pre_train()
+    print("ready to serve")
     serve()
