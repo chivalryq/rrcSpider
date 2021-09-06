@@ -76,17 +76,17 @@ def parse_timestamp(timestamp: int) -> int:
 
 
 model_lgb, model_xgb, model_gbdt = lgb.LGBMRegressor(), xgb.XGBRegressor(), GradientBoostingRegressor()
+model_reg = linear_model.LinearRegression()
 
 
 def pre_train():
-    global model_lgb, model_xgb, model_gbdt
+    global model_lgb, model_xgb, model_gbdt, model_reg
 
     csv_data = pd.read_csv('./model/predict_data.csv', sep=',')
     csv_data['regDate'] = csv_data['regDate'].apply(lambda x: parse_time_str(x))
 
     train_data = csv_data
 
-    ## 输出数据的大小信息
     print('Train data shape:', train_data.shape)
 
     numerical_cols = train_data.select_dtypes(exclude='object').columns
@@ -104,6 +104,16 @@ def pre_train():
     model_gbdt = build_model_gbdt(X_data, Y_data)
     model_xgb = build_model_xgb(X_data, Y_data)
     model_lgb = build_model_lgb(X_data, Y_data)
+    model_reg = build_model_lr(X_data, Y_data)
+
+    y = model_reg.predict(X_data)
+    X_data['pred'] = y
+    X_data['price'] = Y_data
+    error = 0.0
+    for row in X_data.iterrows():
+        error += abs(row[1].price - row[1].pred)
+    error /= X_data.shape[0]
+    print('MAE', error)
 
 
 def weighted_method(test_pre1, test_pre2, test_pre3, w: List[float]):
@@ -123,6 +133,8 @@ def predict(original_price: float, mileage: float, timestamp: int) -> float:
 
     w = [0.3, 0.4, 0.3]
     val_predict = weighted_method(val_lgb, val_xgb, val_gbdt, w)
+    # test
+    val_predict = model_reg.predict(x_val)
     return val_predict
 
 
