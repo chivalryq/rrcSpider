@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 
 import lightgbm as lgb
 import numpy as np
@@ -7,6 +7,8 @@ import xgboost as xgb
 from sklearn import linear_model
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.model_selection import GridSearchCV
+
+from sql.hbase import get_data_from_hbase
 
 
 def res_statistic(data):
@@ -76,17 +78,17 @@ def parse_timestamp(timestamp: int) -> int:
 
 
 model_lgb, model_xgb, model_gbdt = lgb.LGBMRegressor(), xgb.XGBRegressor(), GradientBoostingRegressor()
+model_lr = linear_model.LinearRegression()
 
 
 def pre_train():
-    global model_lgb, model_xgb, model_gbdt
+    global model_lgb, model_xgb, model_gbdt, model_lr
 
-    csv_data = pd.read_csv('./model/predict_data.csv', sep=',')
+    csv_data = get_data_from_hbase()
     csv_data['regDate'] = csv_data['regDate'].apply(lambda x: parse_time_str(x))
 
     train_data = csv_data
 
-    ## 输出数据的大小信息
     print('Train data shape:', train_data.shape)
 
     numerical_cols = train_data.select_dtypes(exclude='object').columns
@@ -104,10 +106,14 @@ def pre_train():
     model_gbdt = build_model_gbdt(X_data, Y_data)
     model_xgb = build_model_xgb(X_data, Y_data)
     model_lgb = build_model_lgb(X_data, Y_data)
+    model_lr = build_model_lr(X_data, Y_data)
 
 
-def weighted_method(test_pre1, test_pre2, test_pre3, w: List[float]):
-    return w[0] * pd.Series(test_pre1) + w[1] * pd.Series(test_pre2) + w[2] * pd.Series(test_pre3)
+def weighted_method(val_weight_map: List[Tuple[float, float]]):
+    sum_res = 0
+    for val, weight in val_weight_map:
+        sum_res += max(val * weight, 0.3)
+    return sum_res
 
 
 def predict(original_price: float, mileage: float, timestamp: int) -> float:
@@ -120,22 +126,21 @@ def predict(original_price: float, mileage: float, timestamp: int) -> float:
     val_gbdt = model_gbdt.predict(x_val)
     val_xgb = model_xgb.predict(x_val)
     val_lgb = model_lgb.predict(x_val)
-
-    w = [0.3, 0.4, 0.3]
-    val_predict = weighted_method(val_lgb, val_xgb, val_gbdt, w)
+    val_lr = model_lr.predict(x_val)
+    weight_map = [
+        (val_lr, 0.1),
+        (val_gbdt[0], 0.3),
+        (val_xgb[0], 0.3),
+        (val_lgb[0], 0.3),
+    ]
+    val_predict = weighted_method(weight_map)
     return val_predict
 
 
 def main():
     pre_train()
-    # data_dict = {
-    #     'original_price': [100],
-    #     'mileage': [5],
-    #     'regDate': [360],
-    # }
-    # data_df = pd.DataFrame.from_dict(data_dict)
-    # res = predict(data_df)
-    # print(res)
+    res = predict(10, 5, 500)
+    print(res)
 
 
 if __name__ == '__main__':
